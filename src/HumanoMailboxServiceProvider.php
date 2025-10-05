@@ -29,17 +29,22 @@ class HumanoMailboxServiceProvider extends PackageServiceProvider
 		// Ensure permissions exist for menus and access
 		try {
 			if (Schema::hasTable('permissions') && class_exists(Permission::class)) {
-				// Run the permissions seeder
-				if (class_exists(\HumanoMailbox\Database\Seeders\MailboxPermissionsSeeder::class)) {
-					(new \HumanoMailbox\Database\Seeders\MailboxPermissionsSeeder())->run();
+				// Create permissions directly instead of using seeder
+				$mailboxPermissions = [
+					'mailbox.index', 'mailbox.list', 'mailbox.create', 'mailbox.show',
+					'mailbox.edit', 'mailbox.store', 'mailbox.update', 'mailbox.destroy'
+				];
+
+				foreach ($mailboxPermissions as $permission) {
+					Permission::firstOrCreate(['name' => $permission]);
 				}
 
 				// Grant all mailbox permissions to admin role
 				$adminRole = class_exists(Role::class) ? Role::where('name', 'admin')->first() : null;
 				if ($adminRole) {
-					$mailboxPermissions = Permission::where('name', 'LIKE', 'mailbox.%')->pluck('name')->toArray();
-					if (!empty($mailboxPermissions)) {
-						$adminRole->givePermissionTo($mailboxPermissions);
+					$createdPermissions = Permission::whereIn('name', $mailboxPermissions)->get();
+					if ($createdPermissions->isNotEmpty()) {
+						$adminRole->givePermissionTo($createdPermissions);
 					}
 				}
 			}
