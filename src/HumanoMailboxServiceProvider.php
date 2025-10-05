@@ -24,35 +24,7 @@ class HumanoMailboxServiceProvider extends PackageServiceProvider
 	{
 		parent::bootingPackage();
 
-		try {
-			if (Schema::hasTable('modules')) {
-				if (class_exists(\App\Models\Module::class)) {
-					\App\Models\Module::updateOrCreate(
-						['key' => 'mailbox'],
-						[
-							'name' => 'Mailbox',
-							'icon' => 'ti ti-mail',
-							'description' => 'Team mailbox with contact linking, threading and assignments',
-							'is_core' => false,
-							'status' => 1,
-						]
-					);
-				} else {
-					SystemModule::query()->updateOrCreate(
-						['key' => 'mailbox'],
-						[
-							'name' => 'Mailbox',
-							'icon' => 'ti ti-mail',
-							'description' => 'Team mailbox with contact linking, threading and assignments',
-							'is_core' => false,
-							'status' => 1,
-						]
-					);
-				}
-			}
-		} catch (\Throwable $e) {
-			Log::debug('HumanoMailbox: module registration skipped: ' . $e->getMessage());
-		}
+		$this->registerMailboxModule();
 
 		// Ensure permissions exist for menus and access
 		try {
@@ -74,6 +46,55 @@ class HumanoMailboxServiceProvider extends PackageServiceProvider
 		} catch (\Throwable $e) {
 			Log::debug('HumanoMailbox: permissions setup skipped: ' . $e->getMessage());
 		}
+	}
+
+	/**
+	 * Register Mailbox module in Support group
+	 */
+	private function registerMailboxModule(): void
+	{
+		try {
+			if (Schema::hasTable('modules')) {
+				if (class_exists(\App\Models\Module::class)) {
+					\App\Models\Module::updateOrCreate(
+						['key' => 'mailbox'],
+						[
+							'name' => 'Mailbox',
+							'icon' => 'ti ti-mail',
+							'description' => 'Team mailbox management',
+							'is_core' => false,
+							'group' => 'support',
+							'order' => 4,
+							'status' => 1,
+						]
+					);
+				} else {
+					SystemModule::query()->updateOrCreate(
+						['key' => 'mailbox'],
+						[
+							'name' => 'Mailbox',
+							'icon' => 'ti ti-mail',
+							'description' => 'Team mailbox management',
+							'is_core' => false,
+							'status' => 1,
+						]
+					);
+				}
+			}
+		} catch (\Throwable $e) {
+			Log::debug('HumanoMailbox: module registration skipped: ' . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Also ensure module is correctly configured after boot (after seeders run)
+	 */
+	public function boot()
+	{
+		parent::boot();
+
+		// Re-run registration to ensure group is correctly set after seeders
+		$this->registerMailboxModule();
 	}
 }
 
